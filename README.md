@@ -1,3 +1,5 @@
 ## RSS Reader
 
-  Validate given URL is a valid feed url or not, if not then find the feed url, Download those feeds in PDF.
+  Display feed data of URL, Download those feeds in PDF.
+  
+### Contributor : [Sanket Parmar](https;//github.com/sanketio)
