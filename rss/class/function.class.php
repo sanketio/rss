@@ -150,12 +150,12 @@ class functions {
             return $url;
         } else {
             return $this->getRSSLocation($this->url_get_contents($url), $url);
+            // Get contents if allow_url_open is allowed
+//            if (@file_get_contents($url)) {
+//                preg_match_all('/<link\srel\=\"alternate\"\stype\=\"application\/(?:rss|atom)\+xml\"\stitle\=\".*href\=\"(.*)\"\s\/\>/', file_get_contents($url), $matches);
+//                return $matches[1][0];
+//            }
         }
-        // Get contents if allow_url_open is allowed
-//        if (@file_get_contents($url)) {
-//            preg_match_all('/<link\srel\=\"alternate\"\stype\=\"application\/(?:rss|atom)\+xml\"\stitle\=\".*href\=\"(.*)\"\s\/\>/', file_get_contents($url), $matches);
-//            return $matches[1][0];
-//        }
 
         return false;
     }
@@ -165,7 +165,7 @@ class functions {
 // Get contents using curl if allow_url_open is not allowed
         $rawFeed = $this->url_get_contents($feedUrl);
 // Get contents if allow_url_open is allowed
-//$rawFeed = file_get_contents($feedUrl);
+        //$rawFeed = file_get_contents($feedUrl);
         $anobii = new SimpleXmlElement($rawFeed);
 
         $feeds = array();
@@ -184,6 +184,29 @@ class functions {
             $feed_tem_array['image_url'] = $this->catch_that_image($anobiiinfo->children('content', true)->encoded);
             if ($feed_tem_array['image_url'] == '') {
                 $feed_tem_array['image_url'] = $this->catch_that_image($anobiiinfo->description);
+            }
+
+            if ($feed_tem_array['image_url'] != '') {
+                $url = $feed_tem_array['image_url'];
+                $fileName = md5($this->get_domain($feedUrl)) . "_sepfile_" . basename($url);
+                $img = DOCUMENT_ROOT . "feed_images/" . $fileName;
+
+                if (!file_exists($img)) {
+                    // if allow openssl and allow_url_fopen
+                    //file_put_contents($img, fopen($url, 'r'));
+                    //if not activate allow_url_fopen and curl is enable
+                    $ch = curl_init($url);
+                    $fp = fopen("feed_images/" . $fileName, 'wb');
+                    curl_setopt($ch, CURLOPT_FILE, $fp);
+                    curl_setopt($ch, CURLOPT_HEADER, 0);
+                    curl_exec($ch);
+                    curl_close($ch);
+                    fclose($fp);
+
+                    $this->imageResize($fileName, IMAGE_WIDTH, IMAGE_HEIGHT);
+                }
+
+                $feed_tem_array['image_thumb'] = $fileName;
             }
 
             array_push($feeds, $feed_tem_array);

@@ -39,26 +39,7 @@ for ($f = 0; $f < $limit; $f++) {
     $feed_str .= '<tr>';
     $feed_str .= '<td style="text-align: center">';
     if ($feeds[$f]['image_url'] != '') {
-        $url = $feeds[$f]['image_url'];
-        $fileName = md5($domain_name) . "_sepfile_" . basename($url);
-        $img = DOCUMENT_ROOT . "feed_images/" . $fileName;
-
-        if (!file_exists($img)) {
-            // if allow openssl and allow_url_fopen
-            //file_put_contents($img, fopen($url, 'r'));
-            //if not activate allow_url_fopen and curl is enable
-            $ch = curl_init($feeds[$f]['image_url']);
-            $fp = fopen("feed_images/" . $fileName, 'wb');
-            curl_setopt($ch, CURLOPT_FILE, $fp);
-            curl_setopt($ch, CURLOPT_HEADER, 0);
-            curl_exec($ch);
-            curl_close($ch);
-            fclose($fp);
-
-            $fn_obj->imageResize($fileName, IMAGE_WIDTH, IMAGE_HEIGHT);
-        }
-
-        $feed_str .= '<a href="' . $feeds[$f]['link'] . '" target="_blank"><img src="feed_images/thumbs/' . $fileName . '" width="100" /></a>';
+        $feed_str .= '<a href="' . $feeds[$f]['link'] . '" target="_blank"><img src="feed_images/thumbs/' . $feeds[$f]['image_thumb'] . '" width="100" /></a>';
     } else {
         $feed_str .= '<a href="' . $feeds[$f]['link'] . '" target="_blank"><img src="images/default_rss.png" width="100" /></a>';
     }

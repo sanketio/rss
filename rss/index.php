@@ -1,10 +1,31 @@
 <?php
 session_start();
 error_reporting(0);
+
+if (!isset($_SESSION['login'])) {
+    header('Location: login.php');
+}
+
+require_once './config/connection.php';
 require_once './config/constants.php';
 require_once './class/function.class.php';
+require_once './class/mysql.php';
+
 $fn_obj = new functions();
+$db = new DataTransaction();
+
+$feed_urls = $db->selectdata('rss_feed_urls', "user_id = '" . $_SESSION['user_details']['user_id'] . "'");
+
+$last_feed_url = $feed_urls[sizeof($feed_urls) - 1]['feed_url'];
+
+// Get domain name for validation purpose.
+$domain_name = $fn_obj->get_domain($last_feed_url);
+
+if (sizeof($feed_urls) > 0) {
+    $last_feed_data = json_decode($fn_obj->parseFeeds($last_feed_url), true);
+}
 ?>
+
 <html>
     <head>
         <title>RSS Reader</title>
@@ -35,11 +56,33 @@ $fn_obj = new functions();
         <div id="spinner">
             <img src="images/ajax-loader.gif" alt="Loading..."/>
         </div>
-        <header style="background-color: #EEE; text-align: center;">
-            <a href="index.php">
-                <img src="images/rss_logo.png" class="image-responsive" />
-            </a>
-        </header>
+        <nav class="navbar navbar-default" role="navigation">
+            <div class="container-fluid">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="index.php">RSS Reader</a>
+                </div>
+
+                <!-- Collect the nav links, forms, and other content for toggling -->
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><label><?php echo $_SESSION['user_details']['displayName']; ?></label> <b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="logout.php">Logout</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div><!-- /.navbar-collapse -->
+            </div><!-- /.container-fluid -->
+        </nav>
+
         <div class="container" style="margin-top: 20px;">
             <div class="row">
                 <div class="col-lg-12">
@@ -69,12 +112,12 @@ $fn_obj = new functions();
                                                     <th>Feed URL</th>
                                                 </tr>
                                                 <?php
-                                                if (isset($_SESSION['org_urls'])) {
-                                                    for ($f = 0; $f < sizeof($_SESSION['org_urls']); $f++) {
+                                                if (sizeof($feed_urls) > 0) {
+                                                    for ($f = 0; $f < sizeof($feed_urls); $f++) {
                                                         ?>
                                                         <tr>
                                                             <td><?php echo ($f + 1); ?></td>
-                                                            <td><a style="cursor: pointer;" onclick="get_feeds('<?php echo $_SESSION['feeds'][$f]; ?>');"><?php echo $_SESSION['org_urls'][$f]; ?></a></td>
+                                                            <td><a style="cursor: pointer;" onclick="get_feeds('<?php echo $feed_urls[$f]['feed_url']; ?>');"><?php echo $feed_urls[$f]['url']; ?></a></td>
                                                         </tr>
                                                         <?php
                                                     }
@@ -91,16 +134,16 @@ $fn_obj = new functions();
                         <div class="panel panel-default">
                             <div class="panel-heading">
                                 Feeds
-                                <input type="button" class="btn btn-primary pull-right <?php if (!isset($_SESSION['feeds'])) { ?>hide<?php } ?>" name="download" id="download" value="Download" style="margin-top: -7px;" <?php if (isset($_SESSION['feeds'])) { ?>onclick="download_feeds('<?php echo $_SESSION['feeds'][0]; ?>');"<?php } ?> />
+                                <input type="button" class="btn btn-primary pull-right <?php if (sizeof($feed_urls) == 0) { ?>hide<?php } ?>" name="download" id="download" value="Download" style="margin-top: -7px;" onclick="download_feeds('<?php echo $last_feed_url; ?>');" />
                             </div>
                             <div class="panel-body" id="feed_div">
                                 <?php
-                                if (isset($_SESSION['items_last'])) {
+                                if (sizeof($feed_urls) > 0) {
                                     ?>
                                     <div id="carousel-example-generic" class="carousel slide" data-ride="carousel">
                                         <div class="carousel-inner">
                                             <?php
-                                            for ($i = 0; $i < sizeof($_SESSION['items_last']); $i++) {
+                                            for ($i = 0; $i < sizeof($last_feed_data); $i++) {
                                                 if ($i == 0) {
                                                     ?>
                                                     <div class="active item">
@@ -114,15 +157,15 @@ $fn_obj = new functions();
                                                         <div style="min-height: 51px; padding: 9px 12px;">
                                                             <div style="margin-left:25px; margin-right:25px;">
                                                                 <div class="media">
-                                                                    <?php if ($_SESSION['items_last'][$i]['image_url'] != '') { ?>
-                                                                        <a href="<?php echo $_SESSION['items_last'][$i]['title']; ?>" target="_blank"><img style="border: 3px solid #fff; border-radius: 10px; padding-right: 20px;" align="left" src="feed_images/thumbs/<?php echo $_SESSION['items_last'][$i]['image_thumb']; ?>"/></a>
+                                                                    <?php if ($last_feed_data[$i]['image_url'] != '') { ?>
+                                                                        <a href="<?php echo $last_feed_data[$i]['title']; ?>" target="_blank"><img style="border: 3px solid #fff; border-radius: 10px; padding-right: 20px;" align="left" src="feed_images/thumbs/<?php echo $last_feed_data[$i]['image_thumb']; ?>"/></a>
                                                                     <?php } else { ?>
-                                                                        <a href="<?php echo $_SESSION['items_last'][$i]['title']; ?>" target="_blank"><img style="border: 3px solid #fff; border-radius: 10px; padding-right: 20px;" align="left" src="images/default_rss.png"/></a>
+                                                                        <a href="<?php echo $last_feed_data[$i]['title']; ?>" target="_blank"><img style="border: 3px solid #fff; border-radius: 10px; padding-right: 20px;" align="left" src="images/default_rss.png"/></a>
                                                                     <?php } ?>
                                                                     <div class="media-body">
-                                                                        <label><a href="<?php echo $_SESSION['items_last'][$i]['title']; ?>" target="_blank"><?php echo $_SESSION['items_last'][$i]['title']; ?></a></label>
+                                                                        <label><a href="<?php echo $last_feed_data[$i]['title']; ?>" target="_blank"><?php echo $last_feed_data[$i]['title']; ?></a></label>
                                                                         <br />
-                                                                        <?php echo $_SESSION['items_last'][$i]['description']; ?>
+                                                                        <?php echo $last_feed_data[$i]['description']; ?>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -148,6 +191,7 @@ $fn_obj = new functions();
                     </div>
                 </div>
             </div>
+        </div>
     </body>
 </html>
 <?php
