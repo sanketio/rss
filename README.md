@@ -6,7 +6,7 @@
 
 ### Description
 
-  This is a web application which gives the feed data of the website url logged in user has requested. Login is for keeping the report of searches he has made. The sequencial flow is given belo step-wise:
+  This is a web application which gives the feed data of the website url logged in user has requested. Login is for keeping the report of searches he has made. The sequencial flow is given below step-wise:
   
   * User has to login using his/her gmail account.
   * After login when user submits the url, the application will first check whether given url is a valid feed url or not.
