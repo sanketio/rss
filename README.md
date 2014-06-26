@@ -22,5 +22,5 @@
   * **Frontend** : HTML5, CSS, jQyery, Bootstrap
   * **Libs** :
     * mpdf (To download Feed data in PDF Format)
-    * Google Oauth (To sign in with gmail account)
+    * Google Oauth (To sign in with google plus account)
   
